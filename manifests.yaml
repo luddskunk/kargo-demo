@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: kargo-demo
 spec:
-  replicas: 1
+  replicas: 10
   selector:
     matchLabels:
       app: kargo-demo
@@ -13,15 +13,15 @@ spec:
         app: kargo-demo
     spec:
       containers:
-      - image: public.ecr.aws/nginx/nginx:1.26.2
+      - image: public.ecr.aws/nginx/nginx:1.27.1
         name: nginx
         resources:
           limits:
-            cpu: 400m
+            cpu: 100m
             memory: 128Mi
           requests:
-            cpu: 250m
-            memory: 64Mi
+            cpu: 20m
+            memory: 16Mi
         volumeMounts:
         - mountPath: /usr/share/nginx/html
           name: content
