@@ -19,6 +19,13 @@ spec:
         - mountPath: /usr/share/nginx/html
           name: content
           readOnly: true
+      resources:
+        limits:
+          cpu: 500m
+          memory: 128Mi
+        requests:
+          cpu: 250m
+          memory: 64Mi
       volumes:
       - configMap:
           name: kargo-demo-content
