@@ -1,3 +1,5 @@
+---
+# Simple project that allows auto-promotion to the harmony stage
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Project
 metadata:
@@ -7,6 +9,7 @@ spec:
   - stage: harmony
     autoPromotionEnabled: true
 ---
+# Kargo needs a secret to access the git repository
 apiVersion: v1
 kind: Secret
 type: Opaque
@@ -18,20 +21,24 @@ metadata:
 stringData:
   repoURL: https://github.com/luddskunk/kargo-demo
   username: luddskunk
-  password: <INPUT_SECRET>
+  password: ${PAT_TOKEN}
 ---
+# A warehouse is a subscription to a container image repository, could also be a git repository for
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Warehouse
 metadata:
   name: kargo-demo
   namespace: kargo-demo
 spec:
+  interval: 5m
   subscriptions:
   - image:
       repoURL: public.ecr.aws/nginx/nginx
       semverConstraint: ^1.26.0
       discoveryLimit: 5
+      strictSemvers: true
 ---
+# A stage is a place where you can promote your piece of freight to
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
 metadata:
@@ -43,7 +50,7 @@ spec:
       kind: Warehouse
       name: kargo-demo
     sources:
-      direct: true
+      direct: true # Directly use the image from the warehouse, not from an earlier stage
   promotionTemplate:
     spec:
       steps:
@@ -99,7 +106,7 @@ spec:
       name: kargo-demo
     sources:
       stages:
-      - harmony
+      - harmony # Uses the harmony stage as a source
   promotionTemplate:
     spec:
       steps:
@@ -131,27 +138,23 @@ spec:
           path: ./out
           messageFromSteps:
           - update-image
-      # - uses: git-push
-      #   as: push
-      #   config:
-      #     path: ./out
-      #     generateTargetBranch: true
-      # - uses: git-open-pr
-      #   as: open-pr
-      #   config:
-      #     repoURL: ${GITOPS_REPO_URL}
-      #     createTargetBranch: true
-      #     sourceBranchFromStep: push
-      #     targetBranch: stage/prod
-      # - uses: git-wait-for-pr
-      #   as: wait-for-pr
-      #   config:
-      #     repoURL: ${GITOPS_REPO_URL}
-      #     prNumberFromStep: open-pr
       - uses: git-push
+        as: push
         config:
           path: ./out
+          generateTargetBranch: true
+      - uses: git-open-pr
+        as: open-pr
+        config:
+          repoURL: https://github.com/luddskunk/kargo-demo
+          createTargetBranch: true
+          sourceBranchFromStep: push
           targetBranch: stage/prod
+      - uses: git-wait-for-pr
+        as: wait-for-pr
+        config:
+          repoURL: https://github.com/luddskunk/kargo-demo
+          prNumberFromStep: open-pr
       - uses: argocd-update
         config:
           apps:
